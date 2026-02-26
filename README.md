@@ -68,3 +68,7 @@ make run
 - **Security:** Tự động check quyền sở hữu (ownership) đối với các CRUD Task.
 - **Graceful Shutdown:** Đảm bảo server đóng các kết nối an toàn khi nhận tín hiệu tắt.
 - **Centralized Error Handling:** Quản lý mã lỗi và thông báo lỗi tập trung tại tầng Domain.
+
+## AI Assistant
+
+- Antigravity: Gemini 3.1 Pro
