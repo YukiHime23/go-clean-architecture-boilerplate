@@ -1,74 +1,130 @@
 # Go Clean Architecture REST API Boilerplate
 
-Dự án này là một bản boilerplate hoàn chỉnh cho Go REST API, được xây dựng theo kiến trúc **Clean Architecture** (Domain, Usecase, Repository, Delivery) nhằm đảm bảo tính bảo trì, mở rộng và dễ dàng kiểm thử.
+REST API boilerplate được xây dựng theo **Clean Architecture** với Go, Gin, GORM và JWT.
 
-## 🚀 Công nghệ sử dụng
-- **Languague:** Go (Golang)
-- **Framework:** [Gin-gonic](https://github.com/gin-gonic/gin)
-- **ORM:** [GORM](https://gorm.io/) (với driver MySQL)
-- **Log:** [Uber-zap](https://github.com/uber-go/zap) (custom middleware)
-- **Auth:** JWT (JSON Web Token)
-- **Validation:** Go Playground Validator (tích hợp trong Gin)
-- **Database:** MySQL 8.0
+## Tech Stack
 
-## 📂 Cấu trúc thư mục
-```bash
+- **Go** 1.22+
+- **Gin** — HTTP framework
+- **GORM** + MySQL driver
+- **golang-jwt/jwt v5** — JWT authentication
+- **godotenv** — `.env` loader
+- **bcrypt** — password hashing
+
+## Project Structure
+
+```
 .
-├── cmd/api/            # Điểm khởi đầu (main.go), Dependency Injection
-├── config/             # Quản lý cấu hình tập trung từ .env
+├── cmd/api/                        # Entry point (main.go)
+├── config/                         # Config loader từ env vars
 ├── internal/
-│   ├── domain/         # Entities (Thực thể), Interfaces (không phụ thuộc tag)
-│   ├── repository/     # Triển khai tầng lưu trữ (GORM models & operations)
-│   ├── usecase/        # Logic nghiệp vụ (Business Logic)
-│   └── delivery/http/  # Tầng vận chuyển (Handlers, Routes, Middlewares, DTOs)
-├── pkg/                # Các thư viện dùng chung (Logger, Database connection)
-├── .env.example        # Mẫu file cấu hình môi trường
-├── Dockerfile          # Multi-stage Docker build
-├── docker-compose.yaml # Docker setup cho MySQL và App
-└── Makefile            # Lệnh tắt cho build, run, test
+│   ├── domain/
+│   │   └── entity/                 # Core domain structs (User, Task)
+│   ├── repository/mysql/           # GORM implementations
+│   ├── usecase/
+│   │   ├── auth/                   # DTOs + repo interfaces + business logic
+│   │   ├── user/
+│   │   └── task/
+│   └── delivery/
+│       ├── handler/                # Gin handlers + usecase interfaces
+│       ├── middleware/             # JWT auth middleware
+│       └── router/                 # Route registration
+└── pkg/
+    ├── apperror/                   # Typed app errors
+    ├── jwt/                        # JWT generate/parse helpers
+    └── response/                   # Unified JSON response helpers
 ```
 
-## 🛠 Hướng dẫn chạy nhanh
+## Getting Started
 
-### 1. Chuẩn bị môi trường
-Copy file mẫu cấu hình và điều chỉnh các thông số (Database, JWT Secret):
+### 1. Clone và cài đặt
+
+```bash
+git clone <repo>
+cd <repo>
+go mod download
+```
+
+### 2. Cấu hình environment
+
 ```bash
 cp .env.example .env
+# Chỉnh sửa .env với thông tin DB và JWT secret của bạn
 ```
 
-### 2. Chạy với Docker (Khuyên dùng)
-Lệnh này sẽ khởi chạy cả MySQL và API App trong container:
+### 3. Tạo database MySQL
+
+```sql
+CREATE DATABASE go_clean_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+### 4. Chạy server
+
 ```bash
-make docker-up
+go run ./cmd/api
 ```
 
-### 3. Chạy local
-Nếu bạn đã có MySQL chạy sẵn, hãy cập nhật thông tin trong `.env` và chạy trực tiếp:
-```bash
-make run
+Server khởi động tại `http://localhost:8080`. GORM sẽ tự động `AutoMigrate` tạo bảng.
+
+## API Endpoints
+
+| Group  | Method | Endpoint                | Auth |
+| :----- | :----- | :---------------------- | :--- |
+| Auth   | POST   | `/api/v1/auth/register` | ❌   |
+|        | POST   | `/api/v1/auth/login`    | ❌   |
+| User   | GET    | `/api/v1/users/me`      | ✅   |
+|        | PUT    | `/api/v1/users/me`      | ✅   |
+|        | GET    | `/api/v1/users`         | ✅   |
+| Task   | POST   | `/api/v1/tasks`         | ✅   |
+|        | GET    | `/api/v1/tasks`         | ✅   |
+|        | GET    | `/api/v1/tasks/:id`     | ✅   |
+|        | PUT    | `/api/v1/tasks/:id`     | ✅   |
+|        | DELETE | `/api/v1/tasks/:id`     | ✅   |
+
+## Authentication
+
+Các endpoint có `✅` yêu cầu header:
+
+```
+Authorization: Bearer <token>
 ```
 
-## 📝 Danh sách API chính
+Token nhận được từ response của `/auth/register` hoặc `/auth/login`.
 
-| Group | Method | Endpoint | Auth |
-| :--- | :--- | :--- | :--- |
-| **Auth** | POST | `/api/v1/auth/register` | ❌ |
-| | POST | `/api/v1/auth/login` | ❌ |
-| **User** | GET | `/api/v1/users/me` | ✅ |
-| | PUT | `/api/v1/users/me` | ✅ |
-| | GET | `/api/v1/users` | ✅ |
-| **Task** | POST | `/api/v1/tasks` | ✅ |
-| | GET | `/api/v1/tasks` | ✅ |
-| | GET | `/api/v1/tasks/:id` | ✅ |
-| | PUT | `/api/v1/tasks/:id` | ✅ |
-| | DELETE | `/api/v1/tasks/:id` | ✅ |
+## Request Examples
 
-## 🛡 Đặc điểm nổi bật
-- **Strict Decoupling:** Tách biệt hoàn toàn DTO (giao tiếp), Domain (lõi) và Model (database).
-- **Security:** Tự động check quyền sở hữu (ownership) đối với các CRUD Task.
-- **Graceful Shutdown:** Đảm bảo server đóng các kết nối an toàn khi nhận tín hiệu tắt.
-- **Centralized Error Handling:** Quản lý mã lỗi và thông báo lỗi tập trung tại tầng Domain.
+### Register
+```json
+POST /api/v1/auth/register
+{
+  "name": "Nguyen Van A",
+  "email": "user@example.com",
+  "password": "secret123"
+}
+```
 
-## AI Assistant
+### Login
+```json
+POST /api/v1/auth/login
+{
+  "email": "user@example.com",
+  "password": "secret123"
+}
+```
 
-- Antigravity: Gemini 3.1 Pro
+### Create Task
+```json
+POST /api/v1/tasks
+Authorization: Bearer <token>
+{
+  "title": "Implement feature X",
+  "description": "Details here",
+  "status": "pending"
+}
+```
+
+## Task Status Values
+
+- `pending`
+- `in_progress`
+- `done`
