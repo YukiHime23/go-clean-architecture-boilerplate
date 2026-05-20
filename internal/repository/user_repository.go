@@ -49,17 +49,17 @@ func fromUserDomain(u *domain.User) *userModel {
 	}
 }
 
-type userRepository struct {
+type UserRepository struct {
 	db *gorm.DB
 }
 
-func NewUserRepository(db *gorm.DB) domain.UserRepository {
+func NewUserRepository(db *gorm.DB) *UserRepository {
 	// Ensure migration use the local model
 	_ = db.AutoMigrate(&userModel{})
-	return &userRepository{db: db}
+	return &UserRepository{db: db}
 }
 
-func (r *userRepository) Create(user *domain.User) error {
+func (r *UserRepository) Create(user *domain.User) error {
 	m := fromUserDomain(user)
 	if err := r.db.Create(m).Error; err != nil {
 		return err
@@ -68,7 +68,7 @@ func (r *userRepository) Create(user *domain.User) error {
 	return nil
 }
 
-func (r *userRepository) FindByID(id uint) (*domain.User, error) {
+func (r *UserRepository) FindByID(id uint) (*domain.User, error) {
 	var m userModel
 	if err := r.db.First(&m, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -79,7 +79,7 @@ func (r *userRepository) FindByID(id uint) (*domain.User, error) {
 	return m.ToDomain(), nil
 }
 
-func (r *userRepository) FindByEmail(email string) (*domain.User, error) {
+func (r *UserRepository) FindByEmail(email string) (*domain.User, error) {
 	var m userModel
 	if err := r.db.Where("email = ?", email).First(&m).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -90,7 +90,7 @@ func (r *userRepository) FindByEmail(email string) (*domain.User, error) {
 	return m.ToDomain(), nil
 }
 
-func (r *userRepository) FindAll(page, limit int) ([]domain.User, int64, error) {
+func (r *UserRepository) FindAll(page, limit int) ([]domain.User, int64, error) {
 	var models []userModel
 	var total int64
 	offset := (page - 1) * limit
@@ -109,12 +109,12 @@ func (r *userRepository) FindAll(page, limit int) ([]domain.User, int64, error) 
 	return users, total, nil
 }
 
-func (r *userRepository) Update(user *domain.User) error {
+func (r *UserRepository) Update(user *domain.User) error {
 	m := fromUserDomain(user)
 	return r.db.Save(m).Error
 }
 
-func (r *userRepository) Delete(id uint) error {
+func (r *UserRepository) Delete(id uint) error {
 	result := r.db.Delete(&userModel{}, id)
 	if result.Error != nil {
 		return result.Error

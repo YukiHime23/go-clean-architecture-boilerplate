@@ -51,16 +51,16 @@ func fromTaskDomain(t *domain.Task) *taskModel {
 	}
 }
 
-type taskRepository struct {
+type TaskRepository struct {
 	db *gorm.DB
 }
 
-func NewTaskRepository(db *gorm.DB) domain.TaskRepository {
+func NewTaskRepository(db *gorm.DB) *TaskRepository {
 	_ = db.AutoMigrate(&taskModel{})
-	return &taskRepository{db: db}
+	return &TaskRepository{db: db}
 }
 
-func (r *taskRepository) Create(task *domain.Task) error {
+func (r *TaskRepository) Create(task *domain.Task) error {
 	m := fromTaskDomain(task)
 	if err := r.db.Create(m).Error; err != nil {
 		return err
@@ -69,7 +69,7 @@ func (r *taskRepository) Create(task *domain.Task) error {
 	return nil
 }
 
-func (r *taskRepository) FindByID(id uint) (*domain.Task, error) {
+func (r *TaskRepository) FindByID(id uint) (*domain.Task, error) {
 	var m taskModel
 	if err := r.db.First(&m, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -80,7 +80,7 @@ func (r *taskRepository) FindByID(id uint) (*domain.Task, error) {
 	return m.ToDomain(), nil
 }
 
-func (r *taskRepository) FindAllByUserID(userID uint, page, limit int) ([]domain.Task, int64, error) {
+func (r *TaskRepository) FindAllByUserID(userID uint, page, limit int) ([]domain.Task, int64, error) {
 	var models []taskModel
 	var total int64
 	offset := (page - 1) * limit
@@ -100,12 +100,12 @@ func (r *taskRepository) FindAllByUserID(userID uint, page, limit int) ([]domain
 	return tasks, total, nil
 }
 
-func (r *taskRepository) Update(task *domain.Task) error {
+func (r *TaskRepository) Update(task *domain.Task) error {
 	m := fromTaskDomain(task)
 	return r.db.Save(m).Error
 }
 
-func (r *taskRepository) Delete(id, userID uint) error {
+func (r *TaskRepository) Delete(id, userID uint) error {
 	result := r.db.Where("id = ? AND user_id = ?", id, userID).Delete(&taskModel{})
 	if result.Error != nil {
 		return result.Error

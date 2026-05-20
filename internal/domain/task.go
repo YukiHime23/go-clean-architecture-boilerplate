@@ -24,24 +24,6 @@ type Task struct {
 	UpdatedAt   time.Time
 }
 
-// TaskRepository defines the contract for task data persistence.
-type TaskRepository interface {
-	Create(task *Task) error
-	FindByID(id uint) (*Task, error)
-	FindAllByUserID(userID uint, page, limit int) ([]Task, int64, error)
-	Update(task *Task) error
-	Delete(id, userID uint) error
-}
-
-// TaskUsecase defines the contract for task business logic.
-type TaskUsecase interface {
-	Create(userID uint, input *CreateTaskInput) (*Task, error)
-	GetByID(id, userID uint) (*Task, error)
-	GetAllByUserID(userID uint, page, limit int) ([]Task, int64, error)
-	Update(id, userID uint, input *UpdateTaskInput) (*Task, error)
-	Delete(id, userID uint) error
-}
-
 // CreateTaskInput is a clean struct for creating a task.
 type CreateTaskInput struct {
 	Title       string

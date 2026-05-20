@@ -14,14 +14,21 @@ import (
 	"go.uber.org/zap"
 )
 
-// TaskHandler handles HTTP requests for task management.
+type taskUsecase interface {
+	Create(userID uint, input *domain.CreateTaskInput) (*domain.Task, error)
+	GetByID(id, userID uint) (*domain.Task, error)
+	GetAllByUserID(userID uint, page, limit int) ([]domain.Task, int64, error)
+	Update(id, userID uint, input *domain.UpdateTaskInput) (*domain.Task, error)
+	Delete(id, userID uint) error
+}
+
 type TaskHandler struct {
-	taskUsecase domain.TaskUsecase
+	taskUsecase taskUsecase
 	log         *zap.Logger
 }
 
-func NewTaskHandler(taskUsecase domain.TaskUsecase, log *zap.Logger) *TaskHandler {
-	return &TaskHandler{taskUsecase: taskUsecase, log: log}
+func NewTaskHandler(uc taskUsecase, log *zap.Logger) *TaskHandler {
+	return &TaskHandler{taskUsecase: uc, log: log}
 }
 
 func (h *TaskHandler) Create(c *gin.Context) {

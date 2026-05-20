@@ -13,19 +13,23 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type authUsecase struct {
-	userRepo  domain.UserRepository
+type userAuthStore interface {
+	Create(user *domain.User) error
+	FindByEmail(email string) (*domain.User, error)
+}
+
+type AuthUsecase struct {
+	userRepo  userAuthStore
 	jwtConfig config.JWTConfig
 	log       *zap.Logger
 }
 
-// NewAuthUsecase creates a new AuthUsecase with injected JWT config.
-func NewAuthUsecase(userRepo domain.UserRepository, jwtCfg config.JWTConfig, log *zap.Logger) domain.AuthUsecase {
-	return &authUsecase{userRepo: userRepo, jwtConfig: jwtCfg, log: log}
+func NewAuthUsecase(userRepo userAuthStore, jwtCfg config.JWTConfig, log *zap.Logger) *AuthUsecase {
+	return &AuthUsecase{userRepo: userRepo, jwtConfig: jwtCfg, log: log}
 }
 
 // Register creates a new user with a hashed password.
-func (u *authUsecase) Register(input *domain.RegisterInput) (*domain.User, error) {
+func (u *AuthUsecase) Register(input *domain.RegisterInput) (*domain.User, error) {
 	_, err := u.userRepo.FindByEmail(input.Email)
 	if err == nil {
 		return nil, domain.NewConflictError("email already registered")
@@ -54,7 +58,7 @@ func (u *authUsecase) Register(input *domain.RegisterInput) (*domain.User, error
 }
 
 // Login validates credentials and returns a signed JWT.
-func (u *authUsecase) Login(input *domain.LoginInput) (string, error) {
+func (u *AuthUsecase) Login(input *domain.LoginInput) (string, error) {
 	user, err := u.userRepo.FindByEmail(input.Email)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
@@ -83,7 +87,7 @@ type JWTClaims struct {
 	jwt.RegisteredClaims
 }
 
-func (u *authUsecase) generateJWT(user *domain.User) (string, error) {
+func (u *AuthUsecase) generateJWT(user *domain.User) (string, error) {
 	if u.jwtConfig.Secret == "" {
 		return "", fmt.Errorf("JWT secret is not configured")
 	}

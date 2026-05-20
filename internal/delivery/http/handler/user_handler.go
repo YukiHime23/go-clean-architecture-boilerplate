@@ -14,14 +14,20 @@ import (
 	"go.uber.org/zap"
 )
 
-// UserHandler handles HTTP requests for user management.
+type userUsecase interface {
+	GetByID(id uint) (*domain.User, error)
+	GetAll(page, limit int) ([]domain.User, int64, error)
+	Update(id uint, input *domain.UpdateUserInput) (*domain.User, error)
+	Delete(id uint) error
+}
+
 type UserHandler struct {
-	userUsecase domain.UserUsecase
+	userUsecase userUsecase
 	log         *zap.Logger
 }
 
-func NewUserHandler(userUsecase domain.UserUsecase, log *zap.Logger) *UserHandler {
-	return &UserHandler{userUsecase: userUsecase, log: log}
+func NewUserHandler(uc userUsecase, log *zap.Logger) *UserHandler {
+	return &UserHandler{userUsecase: uc, log: log}
 }
 
 func (h *UserHandler) GetMe(c *gin.Context) {

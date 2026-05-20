@@ -8,17 +8,24 @@ import (
 	"go.uber.org/zap"
 )
 
-type taskUsecase struct {
-	taskRepo domain.TaskRepository
+type taskStore interface {
+	Create(task *domain.Task) error
+	FindByID(id uint) (*domain.Task, error)
+	FindAllByUserID(userID uint, page, limit int) ([]domain.Task, int64, error)
+	Update(task *domain.Task) error
+	Delete(id, userID uint) error
+}
+
+type TaskUsecase struct {
+	taskRepo taskStore
 	log      *zap.Logger
 }
 
-// NewTaskUsecase creates a new TaskUsecase.
-func NewTaskUsecase(taskRepo domain.TaskRepository, log *zap.Logger) domain.TaskUsecase {
-	return &taskUsecase{taskRepo: taskRepo, log: log}
+func NewTaskUsecase(taskRepo taskStore, log *zap.Logger) *TaskUsecase {
+	return &TaskUsecase{taskRepo: taskRepo, log: log}
 }
 
-func (u *taskUsecase) Create(userID uint, input *domain.CreateTaskInput) (*domain.Task, error) {
+func (u *TaskUsecase) Create(userID uint, input *domain.CreateTaskInput) (*domain.Task, error) {
 	task := &domain.Task{
 		UserID:      userID,
 		Title:       input.Title,
@@ -38,7 +45,7 @@ func (u *taskUsecase) Create(userID uint, input *domain.CreateTaskInput) (*domai
 	return task, nil
 }
 
-func (u *taskUsecase) GetByID(id, userID uint) (*domain.Task, error) {
+func (u *TaskUsecase) GetByID(id, userID uint) (*domain.Task, error) {
 	task, err := u.taskRepo.FindByID(id)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
@@ -54,7 +61,7 @@ func (u *taskUsecase) GetByID(id, userID uint) (*domain.Task, error) {
 	return task, nil
 }
 
-func (u *taskUsecase) GetAllByUserID(userID uint, page, limit int) ([]domain.Task, int64, error) {
+func (u *TaskUsecase) GetAllByUserID(userID uint, page, limit int) ([]domain.Task, int64, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -69,7 +76,7 @@ func (u *taskUsecase) GetAllByUserID(userID uint, page, limit int) ([]domain.Tas
 	return tasks, total, nil
 }
 
-func (u *taskUsecase) Update(id, userID uint, input *domain.UpdateTaskInput) (*domain.Task, error) {
+func (u *TaskUsecase) Update(id, userID uint, input *domain.UpdateTaskInput) (*domain.Task, error) {
 	task, err := u.taskRepo.FindByID(id)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
@@ -102,7 +109,7 @@ func (u *taskUsecase) Update(id, userID uint, input *domain.UpdateTaskInput) (*d
 	return task, nil
 }
 
-func (u *taskUsecase) Delete(id, userID uint) error {
+func (u *TaskUsecase) Delete(id, userID uint) error {
 	if err := u.taskRepo.Delete(id, userID); err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
 			return domain.NewNotFoundError("task not found or you don't have permission")

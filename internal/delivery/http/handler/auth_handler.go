@@ -11,15 +11,18 @@ import (
 	"go.uber.org/zap"
 )
 
-// AuthHandler handles HTTP requests for authentication.
+type authUsecase interface {
+	Register(input *domain.RegisterInput) (*domain.User, error)
+	Login(input *domain.LoginInput) (string, error)
+}
+
 type AuthHandler struct {
-	authUsecase domain.AuthUsecase
+	authUsecase authUsecase
 	log         *zap.Logger
 }
 
-// NewAuthHandler creates a new AuthHandler.
-func NewAuthHandler(authUsecase domain.AuthUsecase, log *zap.Logger) *AuthHandler {
-	return &AuthHandler{authUsecase: authUsecase, log: log}
+func NewAuthHandler(uc authUsecase, log *zap.Logger) *AuthHandler {
+	return &AuthHandler{authUsecase: uc, log: log}
 }
 
 // Register godoc

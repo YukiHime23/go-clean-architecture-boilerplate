@@ -8,17 +8,24 @@ import (
 	"go.uber.org/zap"
 )
 
-type userUsecase struct {
-	userRepo domain.UserRepository
+type userStore interface {
+	FindByID(id uint) (*domain.User, error)
+	FindByEmail(email string) (*domain.User, error)
+	FindAll(page, limit int) ([]domain.User, int64, error)
+	Update(user *domain.User) error
+	Delete(id uint) error
+}
+
+type UserUsecase struct {
+	userRepo userStore
 	log      *zap.Logger
 }
 
-// NewUserUsecase creates a new UserUsecase.
-func NewUserUsecase(userRepo domain.UserRepository, log *zap.Logger) domain.UserUsecase {
-	return &userUsecase{userRepo: userRepo, log: log}
+func NewUserUsecase(userRepo userStore, log *zap.Logger) *UserUsecase {
+	return &UserUsecase{userRepo: userRepo, log: log}
 }
 
-func (u *userUsecase) GetByID(id uint) (*domain.User, error) {
+func (u *UserUsecase) GetByID(id uint) (*domain.User, error) {
 	user, err := u.userRepo.FindByID(id)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
@@ -30,7 +37,7 @@ func (u *userUsecase) GetByID(id uint) (*domain.User, error) {
 	return user, nil
 }
 
-func (u *userUsecase) GetAll(page, limit int) ([]domain.User, int64, error) {
+func (u *UserUsecase) GetAll(page, limit int) ([]domain.User, int64, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -45,7 +52,7 @@ func (u *userUsecase) GetAll(page, limit int) ([]domain.User, int64, error) {
 	return users, total, nil
 }
 
-func (u *userUsecase) Update(id uint, input *domain.UpdateUserInput) (*domain.User, error) {
+func (u *UserUsecase) Update(id uint, input *domain.UpdateUserInput) (*domain.User, error) {
 	user, err := u.userRepo.FindByID(id)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
@@ -74,7 +81,7 @@ func (u *userUsecase) Update(id uint, input *domain.UpdateUserInput) (*domain.Us
 	return user, nil
 }
 
-func (u *userUsecase) Delete(id uint) error {
+func (u *UserUsecase) Delete(id uint) error {
 	if err := u.userRepo.Delete(id); err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
 			return domain.NewNotFoundError("user not found")
